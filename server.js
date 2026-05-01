@@ -87,7 +87,8 @@ Rules:
     res.json({ questions });
   } catch (err) {
     console.error('Error generating questions:', err.message);
-    res.status(500).json({ error: 'Failed to generate questions' });
+    console.error('Full error:', JSON.stringify(err, null, 2));
+    res.status(500).json({ error: err.message });
   }
 });
 
