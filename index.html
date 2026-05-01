@@ -1,0 +1,1505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SciSpark - Kids Science Quiz</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Nunito', sans-serif;
+      background: #0b0c2a;
+      min-height: 100vh;
+      color: #fff;
+      overflow-x: hidden;
+    }
+
+    /* ── Star canvas background ─────────────────────── */
+    #star-canvas {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* ── Screens ────────────────────────────────────── */
+    .screen { display: none; position: relative; z-index: 1; min-height: 100vh; }
+    .screen.active { display: block; }
+
+    /* ══════════════════════════════════════════════════
+       HOME SCREEN
+    ══════════════════════════════════════════════════ */
+    #screen-home { padding: 20px 16px 60px; }
+
+    .home-header {
+      text-align: center;
+      padding: 36px 20px 28px;
+      position: relative;
+    }
+
+    .age-widget {
+      position: absolute;
+      top: 14px;
+      left: 14px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255,255,255,.07);
+      border: 2px solid rgba(255,215,0,.35);
+      border-radius: 20px;
+      padding: 12px 16px 10px;
+      box-shadow: 0 4px 24px rgba(255,215,0,.15);
+      min-width: 90px;
+    }
+
+    .age-widget-emoji {
+      font-size: 1.9rem;
+      animation: age-bounce 1.1s ease-in-out infinite alternate;
+      line-height: 1;
+    }
+
+    @keyframes age-bounce {
+      0%   { transform: translateY(0) rotate(-8deg) scale(1); }
+      40%  { transform: translateY(-6px) rotate(6deg) scale(1.12); }
+      100% { transform: translateY(0) rotate(-4deg) scale(1); }
+    }
+
+    .age-widget-label {
+      font-size: .7rem;
+      font-weight: 800;
+      color: rgba(255,255,255,.5);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      white-space: nowrap;
+    }
+
+    .age-stepper {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .age-step-btn {
+      background: rgba(255,215,0,.18);
+      border: 2px solid rgba(255,215,0,.4);
+      color: #ffd700;
+      font-family: 'Nunito', sans-serif;
+      font-size: 1.1rem;
+      font-weight: 900;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+      transition: background .15s, transform .1s;
+      padding: 0;
+    }
+
+    .age-step-btn:hover  { background: rgba(255,215,0,.38); transform: scale(1.15); }
+    .age-step-btn:active { transform: scale(.92); }
+
+    .age-value {
+      font-size: 1.7rem;
+      font-weight: 900;
+      color: #ffd700;
+      min-width: 32px;
+      text-align: center;
+      text-shadow: 0 0 18px rgba(255,215,0,.6);
+      animation: age-pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes age-pulse {
+      0%,100% { text-shadow: 0 0 10px rgba(255,215,0,.4); }
+      50%      { text-shadow: 0 0 28px rgba(255,215,0,.9); }
+    }
+
+    .logo {
+      font-size: clamp(2.8rem, 9vw, 5rem);
+      font-weight: 900;
+      color: #ffd700;
+      letter-spacing: -1px;
+      animation: glow 2.5s ease-in-out infinite alternate;
+      line-height: 1.1;
+    }
+
+    @keyframes glow {
+      from { text-shadow: 0 0 20px rgba(255,215,0,.3), 0 0 40px rgba(255,165,0,.2); }
+      to   { text-shadow: 0 0 40px rgba(255,215,0,.8), 0 0 80px rgba(255,140,0,.5); }
+    }
+
+    .logo-sub {
+      font-size: clamp(1rem, 3vw, 1.35rem);
+      color: rgba(255,255,255,.75);
+      font-weight: 700;
+      margin-top: 6px;
+    }
+
+    .pick-prompt {
+      font-size: clamp(1rem, 2.8vw, 1.2rem);
+      color: rgba(255,255,255,.55);
+      margin-top: 4px;
+      font-weight: 600;
+    }
+
+    /* Category grid */
+    .categories-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    @media (min-width: 560px)  { .categories-grid { grid-template-columns: repeat(3, 1fr); } }
+    @media (min-width: 860px)  { .categories-grid { grid-template-columns: repeat(5, 1fr); } }
+
+    .cat-card {
+      border-radius: 22px;
+      padding: 20px 10px 18px;
+      text-align: center;
+      cursor: pointer;
+      border: 2px solid rgba(255,255,255,.12);
+      position: relative;
+      overflow: hidden;
+      transition: transform .18s ease, box-shadow .18s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .cat-card::after {
+      content: '';
+      position: absolute;
+      top: 0; left: -100%;
+      width: 60%; height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,.18), transparent);
+      transition: left .45s ease;
+      pointer-events: none;
+    }
+
+    .cat-card:hover  { transform: translateY(-5px) scale(1.04); }
+    .cat-card:hover::after { left: 130%; }
+    .cat-card:active { transform: scale(.96); }
+
+    .cat-emoji {
+      font-size: 2.6rem;
+      display: block;
+      margin-bottom: 7px;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,.35));
+    }
+
+    .cat-name {
+      font-size: .9rem;
+      font-weight: 900;
+      color: #fff;
+      text-shadow: 0 1px 4px rgba(0,0,0,.5);
+      line-height: 1.25;
+    }
+
+    .cat-sub {
+      font-size: .68rem;
+      color: rgba(255,255,255,.82);
+      font-weight: 700;
+      margin-top: 3px;
+      line-height: 1.3;
+    }
+
+    /* ══════════════════════════════════════════════════
+       QUIZ SCREEN
+    ══════════════════════════════════════════════════ */
+    #screen-quiz { padding: 16px 16px 60px; }
+
+    .quiz-inner {
+      max-width: 680px;
+      margin: 0 auto;
+    }
+
+    /* Header row */
+    .quiz-topbar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+
+    .btn-home-q {
+      flex-shrink: 0;
+      background: rgba(255,255,255,.12);
+      border: 2px solid rgba(255,255,255,.25);
+      color: #fff;
+      font-family: 'Nunito', sans-serif;
+      font-size: .95rem;
+      font-weight: 800;
+      padding: 8px 14px;
+      border-radius: 50px;
+      cursor: pointer;
+      transition: background .15s;
+      touch-action: manipulation;
+    }
+    .btn-home-q:hover { background: rgba(255,255,255,.22); }
+
+    .cat-badge {
+      flex: 1;
+      text-align: center;
+      font-size: clamp(.85rem, 2.5vw, 1.05rem);
+      font-weight: 800;
+      background: rgba(255,255,255,.08);
+      border-radius: 50px;
+      padding: 8px 14px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .score-badge {
+      flex-shrink: 0;
+      font-size: 1rem;
+      font-weight: 900;
+      color: #ffd700;
+      background: rgba(255,215,0,.15);
+      border: 2px solid rgba(255,215,0,.4);
+      border-radius: 50px;
+      padding: 8px 14px;
+    }
+
+    /* Progress */
+    .progress-area { margin-bottom: 20px; }
+
+    .progress-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: .85rem;
+      font-weight: 700;
+      color: rgba(255,255,255,.55);
+      margin-bottom: 7px;
+    }
+
+    .progress-track {
+      height: 11px;
+      background: rgba(255,255,255,.1);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #ffd700, #ff8c00);
+      transition: width .5s cubic-bezier(.4,0,.2,1);
+    }
+
+    /* Question card */
+    .question-card {
+      background: rgba(255,255,255,.07);
+      backdrop-filter: blur(18px);
+      border: 2px solid rgba(255,255,255,.1);
+      border-radius: 22px;
+      padding: 24px 20px;
+      margin-bottom: 16px;
+    }
+
+    .q-label {
+      font-size: .78rem;
+      font-weight: 800;
+      color: rgba(255,255,255,.4);
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      margin-bottom: 10px;
+    }
+
+    .q-text {
+      font-size: clamp(1.1rem, 3.5vw, 1.45rem);
+      font-weight: 800;
+      line-height: 1.45;
+    }
+
+    /* Options */
+    .options-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 11px;
+      margin-bottom: 16px;
+    }
+
+    @media (max-width: 380px) { .options-grid { grid-template-columns: 1fr; } }
+
+    .opt-btn {
+      background: rgba(255,255,255,.09);
+      border: 2.5px solid rgba(255,255,255,.18);
+      border-radius: 16px;
+      padding: 15px 11px;
+      color: #fff;
+      font-family: 'Nunito', sans-serif;
+      font-size: clamp(.88rem, 2.5vw, 1rem);
+      font-weight: 700;
+      cursor: pointer;
+      text-align: center;
+      line-height: 1.35;
+      transition: background .15s, border-color .15s, transform .12s;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .opt-btn:hover:not(:disabled) {
+      background: rgba(255,255,255,.18);
+      border-color: rgba(255,255,255,.45);
+      transform: translateY(-2px);
+    }
+
+    .opt-btn:active:not(:disabled) { transform: scale(.97); }
+    .opt-btn:disabled { cursor: default; }
+
+    .opt-btn.correct {
+      background: rgba(50,205,50,.28);
+      border-color: #32cd32;
+      animation: pop-correct .35s ease;
+    }
+
+    .opt-btn.wrong {
+      background: rgba(255,69,58,.28);
+      border-color: #ff453a;
+      animation: shake-wrong .38s ease;
+    }
+
+    @keyframes pop-correct {
+      0%   { transform: scale(1); }
+      45%  { transform: scale(1.06); }
+      100% { transform: scale(1); }
+    }
+
+    @keyframes shake-wrong {
+      0%,100% { transform: translateX(0); }
+      20%     { transform: translateX(-7px); }
+      60%     { transform: translateX(7px); }
+    }
+
+    /* Feedback card */
+    .feedback-card {
+      background: rgba(255,255,255,.07);
+      border: 2px solid rgba(255,255,255,.12);
+      border-radius: 18px;
+      padding: 18px 20px;
+      display: none;
+      animation: fade-up .28s ease;
+    }
+
+    .feedback-card.show { display: block; }
+
+    @keyframes fade-up {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .fb-icon   { font-size: 2.2rem; margin-bottom: 4px; }
+
+    .fb-title  {
+      font-size: 1.15rem;
+      font-weight: 900;
+      margin-bottom: 8px;
+    }
+
+    .fb-title.ok  { color: #4cde4c; }
+    .fb-title.bad { color: #ff6b6b; }
+
+    .fb-fact-label {
+      font-size: .75rem;
+      font-weight: 800;
+      color: #ffd700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 3px;
+    }
+
+    .fb-fact {
+      font-size: .95rem;
+      font-weight: 600;
+      color: rgba(255,255,255,.85);
+      line-height: 1.55;
+    }
+
+    /* ══════════════════════════════════════════════════
+       RESULTS SCREEN
+    ══════════════════════════════════════════════════ */
+    #screen-results.active {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 16px;
+    }
+
+    .results-card {
+      background: rgba(255,255,255,.07);
+      backdrop-filter: blur(20px);
+      border: 2px solid rgba(255,255,255,.13);
+      border-radius: 28px;
+      padding: 40px 28px;
+      text-align: center;
+      max-width: 460px;
+      width: 100%;
+      animation: fade-up .4s ease;
+    }
+
+    .res-emoji { font-size: 4.8rem; margin-bottom: 10px; }
+
+    .res-stars {
+      font-size: 2.4rem;
+      margin-bottom: 14px;
+      animation: stars-pop .5s .1s both;
+    }
+
+    @keyframes stars-pop {
+      0%   { transform: scale(0); opacity: 0; }
+      65%  { transform: scale(1.25); }
+      100% { transform: scale(1);   opacity: 1; }
+    }
+
+    .res-title {
+      font-size: clamp(1.5rem, 5vw, 2.1rem);
+      font-weight: 900;
+      margin-bottom: 10px;
+    }
+
+    .res-msg {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: rgba(255,255,255,.8);
+      line-height: 1.55;
+      margin-bottom: 20px;
+    }
+
+    .score-pill {
+      display: inline-block;
+      background: linear-gradient(135deg, #ffd700, #ff8c00);
+      color: #1a0d00;
+      font-size: 1.25rem;
+      font-weight: 900;
+      padding: 10px 28px;
+      border-radius: 50px;
+      margin-bottom: 28px;
+    }
+
+    .res-buttons {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .btn-primary, .btn-secondary {
+      font-family: 'Nunito', sans-serif;
+      font-size: 1rem;
+      font-weight: 800;
+      padding: 13px 22px;
+      border-radius: 50px;
+      cursor: pointer;
+      border: none;
+      transition: transform .15s, box-shadow .15s;
+      touch-action: manipulation;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #ffd700, #ff8c00);
+      color: #1a0d00;
+      box-shadow: 0 4px 20px rgba(255,215,0,.4);
+    }
+
+    .btn-secondary {
+      background: rgba(255,255,255,.12);
+      color: #fff;
+      border: 2px solid rgba(255,255,255,.28);
+    }
+
+    .btn-primary:hover, .btn-secondary:hover { transform: translateY(-2px); }
+    .btn-primary:active, .btn-secondary:active { transform: scale(.97); }
+
+    /* ── Loading overlay ────────────────────────────── */
+    .loading-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(11,12,42,.93);
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 18px;
+    }
+
+    .loading-overlay.hidden { display: none; }
+
+    .loading-spinner {
+      width: 56px; height: 56px;
+      border: 5px solid rgba(255,215,0,.2);
+      border-top-color: #ffd700;
+      border-radius: 50%;
+      animation: spin .85s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .loading-text {
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: rgba(255,255,255,.85);
+      text-align: center;
+    }
+
+    /* ── Hint ────────────────────────────────────────── */
+    .hint-area { margin-bottom: 14px; text-align: center; }
+
+    .btn-hint {
+      background: rgba(255,215,0,.12);
+      border: 2px solid rgba(255,215,0,.35);
+      color: #ffd700;
+      font-family: 'Nunito', sans-serif;
+      font-size: .92rem;
+      font-weight: 800;
+      padding: 9px 22px;
+      border-radius: 50px;
+      cursor: pointer;
+      transition: background .15s, transform .12s;
+      touch-action: manipulation;
+    }
+
+    .btn-hint:hover:not(:disabled) {
+      background: rgba(255,215,0,.22);
+      transform: translateY(-2px);
+    }
+
+    .btn-hint:disabled { opacity: .5; cursor: default; transform: none; }
+
+    .hint-bubble {
+      margin-top: 10px;
+      background: rgba(255,215,0,.07);
+      border: 2px solid rgba(255,215,0,.22);
+      border-radius: 14px;
+      padding: 12px 16px;
+      font-size: .93rem;
+      font-weight: 600;
+      color: rgba(255,255,255,.9);
+      line-height: 1.55;
+      display: none;
+      animation: fade-up .25s ease;
+    }
+
+    .hint-bubble.show { display: block; }
+
+    /* ══════════════════════════════════════════════════
+       AGE SCREEN
+    ══════════════════════════════════════════════════ */
+    #screen-age.active {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 16px;
+      min-height: 100vh;
+    }
+
+    .age-card {
+      background: rgba(255,255,255,.07);
+      backdrop-filter: blur(20px);
+      border: 2px solid rgba(255,255,255,.13);
+      border-radius: 28px;
+      padding: 40px 28px;
+      text-align: center;
+      max-width: 460px;
+      width: 100%;
+      animation: fade-up .35s ease;
+    }
+
+    .age-title {
+      font-size: clamp(1.4rem, 5vw, 1.9rem);
+      font-weight: 900;
+      margin-bottom: 8px;
+    }
+
+    .age-sub {
+      font-size: 1rem;
+      font-weight: 600;
+      color: rgba(255,255,255,.6);
+      margin-bottom: 28px;
+    }
+
+    .age-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .age-btn {
+      background: rgba(255,255,255,.09);
+      border: 2.5px solid rgba(255,255,255,.18);
+      border-radius: 16px;
+      padding: 18px 8px;
+      color: #fff;
+      font-family: 'Nunito', sans-serif;
+      font-size: 1.35rem;
+      font-weight: 900;
+      cursor: pointer;
+      transition: background .15s, border-color .15s, transform .12s;
+      touch-action: manipulation;
+    }
+
+    .age-btn:hover {
+      background: rgba(255,215,0,.18);
+      border-color: rgba(255,215,0,.6);
+      transform: translateY(-3px) scale(1.06);
+    }
+
+    .age-btn:active { transform: scale(.96); }
+
+    .age-btn span {
+      display: block;
+      font-size: .72rem;
+      font-weight: 700;
+      color: rgba(255,255,255,.55);
+      margin-top: 4px;
+    }
+
+    .btn-back-age {
+      background: rgba(255,255,255,.1);
+      border: 2px solid rgba(255,255,255,.22);
+      color: #fff;
+      font-family: 'Nunito', sans-serif;
+      font-size: .95rem;
+      font-weight: 800;
+      padding: 10px 24px;
+      border-radius: 50px;
+      cursor: pointer;
+      transition: background .15s;
+    }
+
+    .btn-back-age:hover { background: rgba(255,255,255,.2); }
+
+    /* ── Next button ─────────────────────────────────── */
+    .btn-next {
+      background: linear-gradient(135deg, #ffd700, #ff8c00);
+      border: none;
+      color: #1a0d00;
+      font-family: 'Nunito', sans-serif;
+      font-size: 1.05rem;
+      font-weight: 900;
+      padding: 13px 32px;
+      border-radius: 50px;
+      cursor: pointer;
+      box-shadow: 0 4px 20px rgba(255,215,0,.4);
+      transition: transform .15s, box-shadow .15s;
+      touch-action: manipulation;
+      animation: fade-up .25s ease;
+    }
+
+    .btn-next:hover  { transform: translateY(-2px); box-shadow: 0 6px 28px rgba(255,215,0,.6); }
+    .btn-next:active { transform: scale(.96); }
+
+    /* ── Confetti ────────────────────────────────────── */
+    .confetti-bit {
+      position: fixed;
+      top: -12px;
+      pointer-events: none;
+      z-index: 999;
+      border-radius: 2px;
+      animation: fall linear forwards;
+    }
+
+    @keyframes fall {
+      to { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+    }
+  </style>
+</head>
+<body>
+
+<canvas id="star-canvas"></canvas>
+
+<div id="app">
+
+  <!-- ════════ HOME SCREEN ════════ -->
+  <div id="screen-home" class="screen active">
+    <header class="home-header">
+      <div class="age-widget">
+        <span class="age-widget-emoji">🎂</span>
+        <span class="age-widget-label">Your Age</span>
+        <div class="age-stepper">
+          <button class="age-step-btn" id="age-down">−</button>
+          <span class="age-value" id="age-display">5</span>
+          <button class="age-step-btn" id="age-up">+</button>
+        </div>
+      </div>
+      <div class="logo">⚡ SciSpark</div>
+      <p class="logo-sub">The Science Adventure Quiz!</p>
+      <p class="pick-prompt">Pick your age and Start your quiz ride 🚀</p>
+    </header>
+    <div class="categories-grid" id="categories-grid"></div>
+  </div>
+
+  <!-- ════════ AGE SCREEN ════════ -->
+  <div id="screen-age" class="screen">
+    <div class="age-card">
+      <div style="font-size:3rem;margin-bottom:12px">🎂</div>
+      <h2 class="age-title">How old are you?</h2>
+      <p class="age-sub">We'll make the questions just right for you!</p>
+      <div class="age-grid" id="age-grid"></div>
+      <button class="btn-back-age" onclick="showScreen('home')">← Back</button>
+    </div>
+  </div>
+
+  <!-- ════════ QUIZ SCREEN ════════ -->
+  <div id="screen-quiz" class="screen">
+    <div class="quiz-inner">
+      <div class="quiz-topbar">
+        <button class="btn-home-q" id="btn-back">Home</button>
+        <div class="cat-badge" id="cat-badge"></div>
+        <div class="score-badge" id="score-badge">0 pts</div>
+      </div>
+
+      <div class="progress-area">
+        <div class="progress-labels">
+          <span id="prog-text">Question 1 of 8</span>
+          <span id="prog-pct">0%</span>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill" id="prog-fill" style="width:0%"></div>
+        </div>
+      </div>
+
+      <div class="question-card">
+        <div class="q-label" id="q-label">Question 1</div>
+        <div class="q-text" id="q-text"></div>
+      </div>
+
+      <div class="options-grid" id="options-grid"></div>
+
+      <div class="hint-area" id="hint-area">
+        <button class="btn-hint" id="btn-hint">💡 Need a hint?</button>
+        <div class="hint-bubble" id="hint-bubble"></div>
+      </div>
+
+      <div style="text-align:center;margin-bottom:12px;display:none" id="next-btn-area">
+        <button class="btn-next" id="btn-next">Next Question ➜</button>
+      </div>
+
+      <div class="feedback-card" id="feedback-card">
+        <div class="fb-icon" id="fb-icon"></div>
+        <div class="fb-title" id="fb-title"></div>
+        <div class="fb-fact-label">Fun Fact</div>
+        <div class="fb-fact" id="fb-fact"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════ RESULTS SCREEN ════════ -->
+  <div id="screen-results" class="screen">
+    <div class="results-card">
+      <div class="res-emoji" id="res-emoji"></div>
+      <div class="res-stars" id="res-stars"></div>
+      <h2 class="res-title" id="res-title"></h2>
+      <p class="res-msg" id="res-msg"></p>
+      <div class="score-pill" id="res-score"></div>
+      <div class="res-buttons">
+        <button class="btn-primary" id="btn-again">Play Again</button>
+        <button class="btn-secondary" id="btn-home-r">Home</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Loading overlay -->
+<div class="loading-overlay hidden" id="loading-overlay">
+  <div class="loading-spinner"></div>
+  <div class="loading-text" id="loading-text">✨ Claude is crafting your questions...</div>
+</div>
+
+<script>
+/* ================================================================
+   DATA — 10 categories, 8 questions each
+================================================================ */
+const CATEGORIES = [
+  {
+    emoji: '🌍', name: 'Planet Earth', subtitle: 'Weather, Oceans & Volcanoes',
+    gradient: 'linear-gradient(135deg,#56ab2f,#a8e063)',
+    shadow: 'rgba(86,171,47,.45)',
+    questions: [
+      { q: "What covers most of Earth's surface?",
+        o: ["Mountains 🏔️","Water 💧","Deserts 🏜️","Forests 🌲"], c: 1,
+        f: "About 71% of Earth is covered by water — that's a LOT of ocean!" },
+      { q: "What do we call it when the ground suddenly shakes and rumbles?",
+        o: ["Tornado 🌪️","Volcano 🌋","Earthquake 🌍","Hurricane 🌀"], c: 2,
+        f: "Earthquakes happen when giant rocky plates deep underground suddenly move!" },
+      { q: "Which gas do trees give us so we can breathe?",
+        o: ["Nitrogen","Oxygen 💨","Carbon Dioxide","Hydrogen"], c: 1,
+        f: "Trees are Earth's lungs! They breathe in CO₂ and breathe out oxygen for us." },
+      { q: "What do we call the layer of air that wraps around Earth like a blanket?",
+        o: ["Biosphere","Hydrosphere","Atmosphere 🌬️","Lithosphere"], c: 2,
+        f: "The atmosphere protects us from the Sun's harmful rays and keeps us warm!" },
+      { q: "What causes day and night on Earth?",
+        o: ["Earth orbiting the Sun","The Moon blocking the Sun","Earth spinning round 🔄","Clouds covering the Sun"], c: 2,
+        f: "Earth spins once every 24 hours — that's why we get day and night!" },
+      { q: "Which is the largest ocean on Earth?",
+        o: ["Atlantic Ocean","Indian Ocean","Arctic Ocean","Pacific Ocean 🌏"], c: 3,
+        f: "The Pacific Ocean is so huge it covers almost half of our entire planet!" },
+      { q: "Where is most of Earth's fresh water stored?",
+        o: ["Rivers 🏞️","Ice caps and glaciers ❄️","Underground","Lakes"], c: 1,
+        f: "About 69% of all fresh water on Earth is locked up in giant ice sheets!" },
+      { q: "What do we call a massive wave caused by an underwater earthquake?",
+        o: ["Hurricane 🌀","Tsunami 🌊","Tornado 🌪️","Cyclone"], c: 1,
+        f: "Tsunamis can travel as fast as a jet plane across the entire ocean!" }
+    ]
+  },
+  {
+    emoji: '🚀', name: 'Space & Astronomy', subtitle: 'Planets, Stars & Galaxies',
+    gradient: 'linear-gradient(135deg,#667eea,#764ba2)',
+    shadow: 'rgba(102,126,234,.45)',
+    questions: [
+      { q: "Which planet is closest to the Sun?",
+        o: ["Venus","Mars","Mercury ☀️","Earth"], c: 2,
+        f: "Mercury is so close to the Sun that a year there is only 88 Earth days!" },
+      { q: "How many planets are in our Solar System?",
+        o: ["7","8 🪐","9","10"], c: 1,
+        f: "Pluto used to be the 9th planet — it's now called a 'dwarf planet' since 2006!" },
+      { q: "What is the closest star to our planet Earth?",
+        o: ["Sirius ⭐","The Moon 🌙","The Sun ☀️","Polaris"], c: 2,
+        f: "The Sun is 150 million km away, but it's still our nearest star — space is BIG!" },
+      { q: "Which planet has giant beautiful rings around it?",
+        o: ["Jupiter","Uranus","Neptune","Saturn 🪐"], c: 3,
+        f: "Saturn's rings are made of billions of chunks of ice and rock orbiting it!" },
+      { q: "What is the biggest planet in our Solar System?",
+        o: ["Saturn 🪐","Jupiter 🌑","Neptune","Uranus"], c: 1,
+        f: "Jupiter is enormous — you could fit 1,300 Earths inside it!" },
+      { q: "What is a shooting star really?",
+        o: ["A falling star 🌟","A burning space rock 🌠","A comet ☄️","A satellite"], c: 1,
+        f: "Shooting stars are meteors — space rocks that burn up as they enter our atmosphere!" },
+      { q: "How long does it take Earth to travel all the way around the Sun?",
+        o: ["One day","One month","One year 🌍","One decade"], c: 2,
+        f: "Earth travels 940 million kilometres around the Sun every single year!" },
+      { q: "What are the bowl-shaped holes on the Moon's surface called?",
+        o: ["Craters 🌑","Volcanoes","Lakes","Valleys"], c: 0,
+        f: "The Moon's craters were made by space rocks smashing into it billions of years ago!" }
+    ]
+  },
+  {
+    emoji: '⚡', name: 'Physics Fun', subtitle: 'Gravity, Light & Magnets',
+    gradient: 'linear-gradient(135deg,#f7971e,#ffd200)',
+    shadow: 'rgba(247,151,30,.45)',
+    questions: [
+      { q: "What invisible force pulls everything down toward the ground?",
+        o: ["Magnetism","Gravity ⬇️","Electricity","Friction"], c: 1,
+        f: "Gravity keeps us on the ground AND keeps Earth orbiting the Sun!" },
+      { q: "What is the fastest thing in the entire universe?",
+        o: ["Sound 🔊","Light ⚡","A rocket 🚀","The wind 💨"], c: 1,
+        f: "Light zooms at 300,000 km per second — it could circle Earth 7 times in one second!" },
+      { q: "How many colours can you find in a rainbow?",
+        o: ["3 colours","5 colours","7 colours 🌈","10 colours"], c: 2,
+        f: "The 7 rainbow colours are: Red, Orange, Yellow, Green, Blue, Indigo, Violet!" },
+      { q: "What does a magnet always have?",
+        o: ["One pole","Two poles: North & South 🧲","Three poles","No poles"], c: 1,
+        f: "Opposite poles (N and S) attract each other, but same poles push away!" },
+      { q: "What travels through air as invisible waves to reach your ears?",
+        o: ["Light 💡","Heat 🔥","Sound 🎵","Electricity ⚡"], c: 2,
+        f: "Sound travels about 343 metres per second through air — much slower than light!" },
+      { q: "What happens to most objects when they get really hot?",
+        o: ["They shrink","They stay the same","They expand (get bigger) 🔥","They disappear"], c: 2,
+        f: "Heat makes particles move faster and spread out — that's why hot things expand!" },
+      { q: "What is energy from movement called?",
+        o: ["Solar energy ☀️","Potential energy","Kinetic energy 🏃","Nuclear energy"], c: 2,
+        f: "A running cheetah has massive kinetic energy — the faster you move, the more you have!" },
+      { q: "What do we call it when light bends as it passes through water or glass?",
+        o: ["Reflection","Refraction 🔍","Diffraction","Absorption"], c: 1,
+        f: "Refraction is why a straw looks bent in a glass of water — try it!" }
+    ]
+  },
+  {
+    emoji: '🧪', name: 'Cool Chemistry', subtitle: 'Elements, Atoms & Reactions',
+    gradient: 'linear-gradient(135deg,#f953c6,#b91d73)',
+    shadow: 'rgba(249,83,198,.45)',
+    questions: [
+      { q: "What are the three main states of matter?",
+        o: ["Hot, Warm, Cold","Solid, Liquid, Gas 🧊💧💨","Hard, Soft, Squishy","Big, Medium, Small"], c: 1,
+        f: "There's actually a 4th state called plasma — found in lightning bolts and stars!" },
+      { q: "What is the chemical formula for water?",
+        o: ["HO","H₂O 💧","H₃O","OH₂"], c: 1,
+        f: "Water is two hydrogen atoms bonded to one oxygen atom — simple but essential for life!" },
+      { q: "What is the tiniest building block of all matter?",
+        o: ["A cell 🔬","A molecule","An atom ⚛️","A grain of sand"], c: 2,
+        f: "Atoms are so tiny that millions of them could fit on the period at the end of this sentence!" },
+      { q: "What gas must we breathe in to stay alive?",
+        o: ["Carbon Dioxide","Nitrogen","Hydrogen","Oxygen 💨"], c: 3,
+        f: "About 21% of the air around us is oxygen — just the right amount to breathe!" },
+      { q: "What happens when you mix baking soda and vinegar together?",
+        o: ["Nothing happens","It glows 💡","It bubbles and fizzes 🫧","It turns solid"], c: 2,
+        f: "The reaction makes carbon dioxide gas — that's what creates all those amazing bubbles!" },
+      { q: "What element makes up most of the Sun?",
+        o: ["Oxygen","Helium","Hydrogen ☀️","Carbon"], c: 2,
+        f: "The Sun is 73% hydrogen! It smashes hydrogen atoms together to make helium and energy." },
+      { q: "What do we call it when a solid (like ice) changes into a liquid?",
+        o: ["Freezing 🧊","Evaporation","Melting 💧","Condensation"], c: 2,
+        f: "Ice melts at 0°C — and amazingly, water is one of the few things that expands when it freezes!" },
+      { q: "What is the symbol for gold on the periodic table?",
+        o: ["Go","Gd","Au 🥇","Gl"], c: 2,
+        f: "Au comes from 'Aurum' — the ancient Latin word for gold!" }
+    ]
+  },
+  {
+    emoji: '🌿', name: 'Nature & Animals', subtitle: 'Habitats, Plants & Insects',
+    gradient: 'linear-gradient(135deg,#11998e,#38ef7d)',
+    shadow: 'rgba(17,153,142,.45)',
+    questions: [
+      { q: "What amazing creature does a caterpillar turn into?",
+        o: ["A moth","A butterfly 🦋","Both moths and butterflies","A bee 🐝"], c: 2,
+        f: "This incredible transformation is called metamorphosis — one of nature's greatest magic tricks!" },
+      { q: "How many legs does a spider have?",
+        o: ["6 legs 🦟","8 legs 🕷️","10 legs","4 legs"], c: 1,
+        f: "Spiders are arachnids, not insects! Insects always have exactly 6 legs." },
+      { q: "What do we call animals that only eat plants?",
+        o: ["Carnivores 🥩","Omnivores","Herbivores 🌿","Insectivores"], c: 2,
+        f: "Elephants, cows, horses and rabbits are all herbivores — plant lovers!" },
+      { q: "What sweet treat do bees make that we love to eat?",
+        o: ["Milk 🥛","Honey 🍯","Butter","Sugar"], c: 1,
+        f: "A single bee makes only about one-twelfth of a teaspoon of honey in its whole lifetime!" },
+      { q: "What do plants need to make their own food through photosynthesis?",
+        o: ["Music 🎵","Sunlight, water & CO₂ ☀️","Chocolate 🍫","Rainwater only"], c: 1,
+        f: "Plants are amazing! They use sunlight to turn water and CO₂ into sugar for food." },
+      { q: "Which animal is the fastest on land?",
+        o: ["Lion 🦁","Horse 🐴","Cheetah 🐆","Ostrich 🐦"], c: 2,
+        f: "Cheetahs can sprint up to 120 km/h — faster than most cars on a motorway!" },
+      { q: "What do we call animals that sleep during the day and come out at night?",
+        o: ["Diurnal","Nocturnal 🌙","Crepuscular","Hibernating"], c: 1,
+        f: "Owls, bats and hedgehogs are nocturnal — the dark night is their busy time!" },
+      { q: "What is a baby frog called just after it hatches from an egg?",
+        o: ["Cub","Tadpole 🐸","Larva","Pup"], c: 1,
+        f: "Tadpoles breathe underwater using gills, then grow legs and lungs to become frogs!" }
+    ]
+  },
+  {
+    emoji: '🌦️', name: 'Weather & Climate', subtitle: 'Clouds, Storms & Seasons',
+    gradient: 'linear-gradient(135deg,#4facfe,#00f2fe)',
+    shadow: 'rgba(79,172,254,.45)',
+    questions: [
+      { q: "What do we call a violent spinning column of air that touches the ground?",
+        o: ["Blizzard ❄️","Hurricane 🌀","Tornado 🌪️","Monsoon"], c: 2,
+        f: "Tornadoes can spin at over 480 km/h — the fastest winds found anywhere on Earth!" },
+      { q: "What are clouds actually made of?",
+        o: ["Smoke 💨","Tiny water droplets and ice crystals 💧","Cotton candy 🍭","Steam"], c: 1,
+        f: "An average fluffy cloud weighs as much as 500 elephants — but floats because the droplets are so tiny!" },
+      { q: "How many seasons are there in a year?",
+        o: ["2","3","4 🍂🌸❄️☀️","6"], c: 2,
+        f: "The four seasons happen because Earth is tilted on its axis as it orbits the Sun!" },
+      { q: "What is frozen rain that falls as lumps of ice called?",
+        o: ["Sleet","Hail ⛈️","Snow ❄️","Frost"], c: 1,
+        f: "Hailstones grow inside thunderstorm clouds and can sometimes be as big as baseballs!" },
+      { q: "What causes wind to blow?",
+        o: ["The Moon pulling air","Differences in air pressure 💨","Earth spinning","Clouds moving"], c: 1,
+        f: "Wind always blows from areas of high pressure to lower pressure — like air going downhill!" },
+      { q: "What creates a rainbow in the sky?",
+        o: ["Clouds reflecting light","Sunlight bending through raindrops 🌈","Moonlight","Lightning"], c: 1,
+        f: "You always see a rainbow on the opposite side to the Sun — the Sun must be behind you!" },
+      { q: "What is the process of water rising up from the sea to form clouds called?",
+        o: ["Condensation","Precipitation","Evaporation ☁️","Transpiration"], c: 2,
+        f: "The water cycle moves the same water around Earth again and again — water is recycled!" },
+      { q: "What causes the loud BOOM of thunder?",
+        o: ["Clouds bumping together","Lightning superheating the air ⚡","Strong winds","Rain hitting the ground"], c: 1,
+        f: "Lightning heats the air around it to 30,000°C in a fraction of a second — causing an explosion of sound!" }
+    ]
+  },
+  {
+    emoji: '🤖', name: 'Technology & AI', subtitle: 'Computers, Robots & Internet',
+    gradient: 'linear-gradient(135deg,#a18cd1,#fbc2eb)',
+    shadow: 'rgba(161,140,209,.45)',
+    questions: [
+      { q: "What does 'AI' stand for?",
+        o: ["Alien Intelligence 👽","Artificial Intelligence 🤖","Awesome Internet","Automatic Information"], c: 1,
+        f: "AI is computer programs that can learn and solve problems — a bit like a digital brain!" },
+      { q: "What is the internet?",
+        o: ["A giant cable under the sea","A global network of billions of computers 🌐","A big computer in space","A very fast calculator"], c: 1,
+        f: "The internet connects billions of devices all around the world — it's like a giant web!" },
+      { q: "What do we call a set of instructions that tells a computer what to do?",
+        o: ["A recipe 📋","A program or code 💻","A command","A message"], c: 1,
+        f: "Learning to write code (programming) lets you tell computers to do almost anything you can imagine!" },
+      { q: "What tiny chip inside a computer does all the thinking and calculating?",
+        o: ["The keyboard ⌨️","The screen 🖥️","The processor / CPU 💡","The mouse 🖱️"], c: 2,
+        f: "Modern processors have billions of tiny switches called transistors — all on a chip the size of a fingernail!" },
+      { q: "What do robots use to feel and detect the world around them?",
+        o: ["Eyes and ears 👀","Sensors 🔍","Hands and feet","Magic ✨"], c: 1,
+        f: "Robot sensors can detect light, sound, temperature, pressure, and even smell!" },
+      { q: "What is a computer virus?",
+        o: ["A sick computer 🤒","A harmful program that damages or steals data 💻","A software bug 🐛","A type of update"], c: 1,
+        f: "Computer viruses spread from device to device — just like real viruses spread between people!" },
+      { q: "What does GPS stand for?",
+        o: ["Global Phone System","Great Positioning Software","Global Positioning System 📍","Geographic Place Search"], c: 2,
+        f: "GPS uses 24 satellites orbiting Earth to figure out exactly where you are — anywhere on the planet!" },
+      { q: "What is a 'byte' in computer science?",
+        o: ["How hard a computer bites 😄","A unit of digital data storage 💾","A computer snack 🍎","A type of cable"], c: 1,
+        f: "8 bits make 1 byte. A typical photo on your phone takes about 3 million bytes (3 megabytes)!" }
+    ]
+  },
+  {
+    emoji: '🧬', name: 'Human Body', subtitle: 'Organs, Bones & Senses',
+    gradient: 'linear-gradient(135deg,#f77062,#fe5196)',
+    shadow: 'rgba(247,112,98,.45)',
+    questions: [
+      { q: "How many bones does an adult human body have?",
+        o: ["106","156","206 🦴","256"], c: 2,
+        f: "Babies are born with about 270 bones, which slowly fuse together as they grow up!" },
+      { q: "Which organ pumps blood around your entire body?",
+        o: ["Lungs 🫁","Brain 🧠","Heart ❤️","Liver"], c: 2,
+        f: "Your amazing heart beats about 100,000 times every single day without stopping!" },
+      { q: "What is the largest organ in the human body?",
+        o: ["The liver","The brain 🧠","The stomach","Skin 🩺"], c: 3,
+        f: "Your skin covers about 2 square metres and is your body's first line of defence against germs!" },
+      { q: "How many basic senses do humans have?",
+        o: ["3","4","5 👁️👂👃👅✋","7"], c: 2,
+        f: "Sight, hearing, smell, taste, touch — and scientists think we actually have even more senses!" },
+      { q: "What is the job of your lungs?",
+        o: ["Pump blood 🩸","Help you breathe in oxygen 💨","Digest food 🍎","Control thinking 🧠"], c: 1,
+        f: "Your lungs breathe in and out about 20,000 times every single day — that's non-stop!" },
+      { q: "What tiny blood cells carry oxygen around your body?",
+        o: ["White blood cells","Platelets","Red blood cells 🔴","Plasma"], c: 2,
+        f: "You have roughly 25 trillion red blood cells in your body right now — that's an unimaginable number!" },
+      { q: "What is the hardest natural substance in the human body?",
+        o: ["Bone 🦴","Tooth enamel 🦷","Fingernail","Cartilage"], c: 1,
+        f: "Tooth enamel is actually harder than steel! But sugar and acid can still damage it — brush those teeth!" },
+      { q: "Which organ controls everything you do, think and feel?",
+        o: ["Heart ❤️","Lungs 🫁","Stomach","Brain 🧠"], c: 3,
+        f: "Your brain has about 86 billion nerve cells and can process information faster than any computer!" }
+    ]
+  },
+  {
+    emoji: '🌊', name: 'Oceans & Marine Life', subtitle: 'Sea Creatures & Coral Reefs',
+    gradient: 'linear-gradient(135deg,#1e3c72,#2a5298)',
+    shadow: 'rgba(30,60,114,.55)',
+    questions: [
+      { q: "What is the biggest animal ever known to have lived on Earth?",
+        o: ["Great White Shark 🦈","Blue Whale 🐋","Elephant 🐘","Giant Squid"], c: 1,
+        f: "Blue whales can grow up to 30 metres long — longer than two school buses end to end!" },
+      { q: "About how much of Earth's surface is covered by ocean?",
+        o: ["30%","50%","71% 🌊","90%"], c: 2,
+        f: "Oceans hold about 97% of all the water on Earth — it's one enormous interconnected ocean!" },
+      { q: "What do sharks use to breathe underwater?",
+        o: ["Lungs 🫁","Gills 🐟","A blowhole","Their skin"], c: 1,
+        f: "Most sharks must keep swimming to breathe — if they stop moving, they can't get oxygen!" },
+      { q: "Which ocean creature has exactly 8 arms?",
+        o: ["Starfish ⭐","Squid 🦑","Crab 🦀","Octopus 🐙"], c: 3,
+        f: "Octopuses have 3 hearts, blue blood, and can change colour in less than a second!" },
+      { q: "What is the deepest known place in the entire ocean?",
+        o: ["The Bermuda Triangle","The Great Barrier Reef 🪸","The Mariana Trench 🌊","The Atlantic Basin"], c: 2,
+        f: "The Mariana Trench is 11 km deep — that's deeper than Mount Everest is tall!" },
+      { q: "What do coral reefs provide for ocean creatures?",
+        o: ["Food only 🍎","Home, food and shelter 🏡","Clean water 💧","Sunlight ☀️"], c: 1,
+        f: "Coral reefs cover less than 1% of the ocean floor but are home to 25% of all ocean species!" },
+      { q: "What is it called when deep-sea creatures make their own light?",
+        o: ["Photosynthesis ☀️","Bioluminescence ✨","Electroluminescence","Phosphorescence"], c: 1,
+        f: "About 76% of deep-sea animals can produce their own light — it's like living in a glow-in-the-dark world!" },
+      { q: "How do sea turtles find their way back to the exact beach where they were born?",
+        o: ["They follow the Sun ☀️","They smell their way 👃","Earth's magnetic field 🧲","They follow other turtles 🐢"], c: 2,
+        f: "Sea turtles have a built-in magnetic compass in their brain — a GPS that never runs out of battery!" }
+    ]
+  },
+  {
+    emoji: '🔭', name: 'The Universe', subtitle: 'Big Bang, Galaxies & Dark Matter',
+    gradient: 'linear-gradient(135deg,#2c3e50,#4a1942)',
+    shadow: 'rgba(44,62,80,.6)',
+    questions: [
+      { q: "What event do scientists believe started the entire universe?",
+        o: ["The Big Bang 💥","A giant star exploding","It has always existed","A black hole burst open"], c: 0,
+        f: "The Big Bang happened about 13.8 billion years ago — in an instant, space, time and everything was created!" },
+      { q: "What is a black hole?",
+        o: ["A dark planet 🪐","A region where gravity is so strong nothing can escape ⚫","A hole you can fall through","An empty patch of space"], c: 1,
+        f: "If the Sun became a black hole, it would be only 3 km wide — tiny but with unimaginable gravity!" },
+      { q: "What is the name of the galaxy we live in?",
+        o: ["Andromeda Galaxy","The Milky Way 🌌","The Solar Way","The Star River"], c: 1,
+        f: "The Milky Way contains between 100 and 400 billion stars — and our Sun is just one of them!" },
+      { q: "What is a nebula?",
+        o: ["A type of planet 🪐","A giant cloud of gas and dust in space 🌌","A dying star ⭐","A comet ☄️"], c: 1,
+        f: "Nebulae are stellar nurseries — new stars are born inside these beautiful glowing clouds!" },
+      { q: "What is a 'light-year'?",
+        o: ["How long a light bulb lasts","How bright a star appears ⭐","The distance light travels in one year 💡","A very long year"], c: 2,
+        f: "One light-year is about 9.5 trillion kilometres — a distance almost impossible to imagine!" },
+      { q: "How old is the universe?",
+        o: ["1 billion years","4.5 billion years","13.8 billion years ✨","100 billion years"], c: 2,
+        f: "Earth is 4.5 billion years old — the universe is about 3 times older than our own planet!" },
+      { q: "What is 'dark matter'?",
+        o: ["Black holes everywhere","Invisible matter we know exists but can't yet see ⚫","Space between stars","Dark-coloured planets"], c: 1,
+        f: "Dark matter makes up about 27% of the universe — it's all around us but completely invisible!" },
+      { q: "What shape is our Milky Way galaxy?",
+        o: ["Ball-shaped","Elliptical (oval)","Spiral 🌀","Ring-shaped"], c: 2,
+        f: "The Milky Way is a barred spiral galaxy — and it takes 225 million years to rotate just once!" }
+    ]
+  }
+];
+
+/* ================================================================
+   RESULTS — YOUR CONTRIBUTION GOES HERE!
+================================================================
+
+  This function decides what message, stars, emoji and title kids see
+  after finishing a quiz. It's a creative UX decision:
+
+  - How generous should the star ratings be for young children?
+  - Should struggling kids get extra encouragement?
+  - What tone and language feels right for ages 3–12?
+
+  PARAMETERS:
+    correct  (number) — how many questions they got right  (0 to total)
+    total    (number) — total questions in the quiz         (always 8)
+
+  RETURN an object with:
+    emoji   : string  — a big emoji shown at the top (e.g. "🚀")
+    stars   : number  — 1, 2, or 3 stars awarded
+    title   : string  — short exciting heading (e.g. "Science Superstar!")
+    message : string  — friendly 1–2 sentence message for the kid
+
+  HINT — example score bands you could use:
+    0–2 correct  →  1 star  (encourage them to try again!)
+    3–5 correct  →  2 stars (good effort, nearly there!)
+    6–7 correct  →  3 stars (great job!)
+    8   correct  →  3 stars + extra excitement (perfect score!)
+*/
+function getResultsData(correct, total) {
+  // ── TODO: write your results logic here! ──────────────────────
+  // Replace the placeholders below with your own ranges and messages.
+
+  return {
+    emoji:   '🌟',
+    stars:   3,
+    title:   'Science Superstar!',
+    message: 'Incredible work! You really know your science. Keep exploring! 🚀'
+  };
+  // ──────────────────────────────────────────────────────────────
+}
+
+/* ================================================================
+   APP STATE
+================================================================ */
+const state = {
+  catIndex:   0,
+  qIndex:     0,
+  score:      0,
+  answered:   false,
+  questions:  null,  // AI-generated questions for the current quiz (null = use hardcoded)
+  age:        5
+};
+
+/* ================================================================
+   AI HELPERS
+================================================================ */
+function showLoading(show, text) {
+  const overlay = document.getElementById('loading-overlay');
+  if (text) document.getElementById('loading-text').textContent = text;
+  overlay.classList.toggle('hidden', !show);
+}
+
+async function fetchAIQuestions(cat) {
+  const res = await fetch('/api/questions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: cat.name, subtitle: cat.subtitle, emoji: cat.emoji, age: state.age })
+  });
+  if (!res.ok) throw new Error('API error');
+  const data = await res.json();
+  return data.questions;
+}
+
+async function fetchHint(question, options) {
+  const res = await fetch('/api/hint', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ question, options, age: state.age })
+  });
+  if (!res.ok) throw new Error('API error');
+  const data = await res.json();
+  return data.hint;
+}
+
+/* ================================================================
+   SCREEN MANAGEMENT
+================================================================ */
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + id).classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+/* ================================================================
+   AGE SCREEN
+================================================================ */
+const AGE_LABELS = { 4:'4',5:'5',6:'6',7:'7',8:'8',9:'9',10:'10',11:'11',12:'12' };
+
+function renderAge() {
+  const grid = document.getElementById('age-grid');
+  grid.innerHTML = Object.keys(AGE_LABELS).map(age => `
+    <button class="age-btn" onclick="selectAge(${age})">
+      ${age}
+      <span>yrs old</span>
+    </button>
+  `).join('');
+}
+
+function selectAge(age) {
+  state.age = age;
+  beginQuiz();
+}
+
+/* ================================================================
+   HOME SCREEN
+================================================================ */
+function renderHome() {
+  const grid = document.getElementById('categories-grid');
+  grid.innerHTML = CATEGORIES.map((cat, i) => `
+    <div class="cat-card"
+         style="background:${cat.gradient}; box-shadow: 0 8px 28px ${cat.shadow};"
+         onclick="startQuiz(${i})"
+         tabindex="0"
+         role="button"
+         onkeydown="if(event.key==='Enter'||event.key===' ') startQuiz(${i})">
+      <span class="cat-emoji">${cat.emoji}</span>
+      <div class="cat-name">${cat.name}</div>
+      <div class="cat-sub">${cat.subtitle}</div>
+    </div>
+  `).join('');
+}
+
+/* ================================================================
+   QUIZ
+================================================================ */
+function startQuiz(catIndex) {
+  state.catIndex = catIndex;
+  beginQuiz();
+}
+
+async function beginQuiz() {
+  state.qIndex    = 0;
+  state.score     = 0;
+  state.answered  = false;
+  state.questions = null;
+
+  showScreen('quiz');
+  showLoading(true, `✨ Claude is crafting questions for age ${state.age}...`);
+
+  try {
+    state.questions = await fetchAIQuestions(CATEGORIES[state.catIndex]);
+  } catch (e) {
+    console.warn('AI questions unavailable, using built-in questions.');
+    state.questions = null;
+  }
+
+  showLoading(false);
+  renderQuestion();
+}
+
+function renderQuestion() {
+  const cat       = CATEGORIES[state.catIndex];
+  const questions = state.questions || cat.questions;
+  const q         = questions[state.qIndex];
+  const total     = questions.length;
+  const curr      = state.qIndex + 1;
+
+  // Top bar
+  document.getElementById('cat-badge').textContent   = `${cat.emoji}  ${cat.name}`;
+  document.getElementById('score-badge').textContent = `${state.score} pts`;
+
+  // Progress
+  const pct = Math.round(((curr - 1) / total) * 100);
+  document.getElementById('prog-text').textContent  = `Question ${curr} of ${total}`;
+  document.getElementById('prog-pct').textContent   = `${pct}%`;
+  document.getElementById('prog-fill').style.width  = pct + '%';
+
+  // Question
+  document.getElementById('q-label').textContent = `QUESTION ${curr}`;
+  document.getElementById('q-text').textContent  = q.q;
+
+  // Options
+  document.getElementById('options-grid').innerHTML = q.o.map((opt, i) => `
+    <button class="opt-btn" onclick="handleAnswer(${i})">${opt}</button>
+  `).join('');
+
+  // Hide feedback, next button and reset hint
+  document.getElementById('feedback-card').classList.remove('show');
+  document.getElementById('next-btn-area').style.display = 'none';
+  document.getElementById('hint-bubble').classList.remove('show');
+  document.getElementById('hint-bubble').textContent = '';
+  const hintBtn = document.getElementById('btn-hint');
+  hintBtn.disabled = false;
+  hintBtn.textContent = '💡 Need a hint?';
+
+  state.answered = false;
+}
+
+function handleAnswer(selectedIndex) {
+  if (state.answered) return;
+  state.answered = true;
+
+  const cat = CATEGORIES[state.catIndex];
+  const q   = cat.questions[state.qIndex];
+  const ok  = selectedIndex === q.c;
+
+  // Disable all buttons and hint
+  document.querySelectorAll('.opt-btn').forEach(b => b.disabled = true);
+  document.getElementById('btn-hint').disabled = true;
+
+  // Highlight selected button
+  const btns = document.querySelectorAll('.opt-btn');
+  btns[selectedIndex].classList.add(ok ? 'correct' : 'wrong');
+  if (!ok) btns[q.c].classList.add('correct');
+
+  // Update score
+  if (ok) state.score += 10;
+  document.getElementById('score-badge').textContent = `${state.score} pts`;
+
+  // Show feedback
+  const fb        = document.getElementById('feedback-card');
+  const fbIcon    = document.getElementById('fb-icon');
+  const fbTitle   = document.getElementById('fb-title');
+  const fbFact    = document.getElementById('fb-fact');
+
+  if (ok) {
+    fbIcon.textContent   = '🎉';
+    fbTitle.textContent  = 'Correct! Well done!';
+    fbTitle.className    = 'fb-title ok';
+  } else {
+    fbIcon.textContent   = '🤔';
+    fbTitle.textContent  = `Not quite! The answer was: ${q.o[q.c]}`;
+    fbTitle.className    = 'fb-title bad';
+  }
+  fbFact.textContent = q.f;
+  fb.classList.add('show');
+
+  // Show Next button
+  document.getElementById('next-btn-area').style.display = 'block';
+}
+
+/* ================================================================
+   RESULTS
+================================================================ */
+function showResults() {
+  const cat       = CATEGORIES[state.catIndex];
+  const questions = state.questions || cat.questions;
+  const total     = questions.length;
+  const correct = state.score / 10;
+  const data    = getResultsData(correct, total);
+
+  document.getElementById('res-emoji').textContent = data.emoji;
+  document.getElementById('res-stars').textContent = '⭐'.repeat(data.stars) + '☆'.repeat(3 - data.stars);
+  document.getElementById('res-title').textContent = data.title;
+  document.getElementById('res-msg').textContent   = data.message;
+  document.getElementById('res-score').textContent = `${correct} / ${total} correct!`;
+
+  if (data.stars >= 2) launchConfetti();
+
+  showScreen('results');
+}
+
+/* ================================================================
+   CONFETTI
+================================================================ */
+function launchConfetti() {
+  const colours = ['#ffd700','#ff6b6b','#4ecdc4','#45b7d1','#96e6a1','#f9ca24','#ff9ff3','#a29bfe'];
+  for (let i = 0; i < 70; i++) {
+    setTimeout(() => {
+      const el       = document.createElement('div');
+      el.className   = 'confetti-bit';
+      const size     = Math.random() * 9 + 5;
+      el.style.cssText = `
+        left: ${Math.random() * 100}vw;
+        width: ${size}px; height: ${size}px;
+        background: ${colours[Math.floor(Math.random() * colours.length)]};
+        border-radius: ${Math.random() > .5 ? '50%' : '2px'};
+        animation-duration: ${Math.random() * 2.2 + 2}s;
+      `;
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 4500);
+    }, i * 38);
+  }
+}
+
+/* ================================================================
+   ANIMATED STAR BACKGROUND
+================================================================ */
+function initStars() {
+  const canvas = document.getElementById('star-canvas');
+  const ctx    = canvas.getContext('2d');
+
+  const resize = () => { canvas.width = innerWidth; canvas.height = innerHeight; };
+  resize();
+  window.addEventListener('resize', resize);
+
+  const stars = Array.from({ length: 180 }, () => ({
+    x:     Math.random() * innerWidth,
+    y:     Math.random() * innerHeight,
+    r:     Math.random() * 1.4 + 0.2,
+    phase: Math.random() * Math.PI * 2,
+    speed: Math.random() * 0.018 + 0.004
+  }));
+
+  const draw = t => {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    stars.forEach(s => {
+      const alpha = 0.15 + 0.65 * Math.abs(Math.sin(s.phase + t * s.speed));
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(255,255,255,${alpha.toFixed(2)})`;
+      ctx.fill();
+    });
+    requestAnimationFrame(draw);
+  };
+  requestAnimationFrame(draw);
+}
+
+/* ================================================================
+   BOOT
+================================================================ */
+document.getElementById('btn-back').addEventListener('click', () => showScreen('home'));
+
+document.getElementById('btn-next').addEventListener('click', () => {
+  const questions = state.questions || CATEGORIES[state.catIndex].questions;
+  if (state.qIndex + 1 < questions.length) {
+    state.qIndex++;
+    renderQuestion();
+  } else {
+    showResults();
+  }
+});
+document.getElementById('btn-again').addEventListener('click', () => beginQuiz());
+document.getElementById('btn-home-r').addEventListener('click', () => showScreen('home'));
+
+document.getElementById('btn-hint').addEventListener('click', async () => {
+  const btn    = document.getElementById('btn-hint');
+  const bubble = document.getElementById('hint-bubble');
+
+  btn.disabled = true;
+  btn.textContent = '💭 Thinking...';
+
+  const cat       = CATEGORIES[state.catIndex];
+  const questions = state.questions || cat.questions;
+  const q         = questions[state.qIndex];
+
+  try {
+    const hint = await fetchHint(q.q, q.o);
+    bubble.textContent = hint;
+    bubble.classList.add('show');
+    btn.textContent = '💡 Hint shown';
+  } catch (e) {
+    bubble.textContent = '🤔 Think about what you already know — you can do it!';
+    bubble.classList.add('show');
+    btn.textContent = '💡 Need a hint?';
+    btn.disabled = false;
+  }
+});
+
+document.getElementById('age-down').addEventListener('click', () => {
+  if (state.age > 4) { state.age--; document.getElementById('age-display').textContent = state.age; }
+});
+document.getElementById('age-up').addEventListener('click', () => {
+  if (state.age < 12) { state.age++; document.getElementById('age-display').textContent = state.age; }
+});
+
+renderHome();
+renderAge();
+initStars();
+</script>
+</body>
+</html>
