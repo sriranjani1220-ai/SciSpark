@@ -52,10 +52,10 @@ app.post('/api/questions', async (req, res) => {
     const t0 = Date.now();
     const message = await anthropic.messages.create({
       model: 'claude-haiku-4-5-20251001',
-      max_tokens: 1200,
+      max_tokens: 2400,
       messages: [{
         role: 'user',
-        content: `Generate 5 fun science quiz questions for a ${age}-year-old child about "${name}" (${subtitle}).
+        content: `Generate 10 fun science quiz questions for a ${age}-year-old child about "${name}" (${subtitle}).
 
 The child is age ${age} (age group ${profile.range}):
 - Vocabulary: ${profile.vocab}
@@ -75,7 +75,7 @@ Return ONLY a valid JSON array — no markdown, no explanation, just the array:
 Rules:
 - Add a relevant emoji to each option
 - "c" is the 0-based index of the correct answer in "o"
-- All 5 questions must be different
+- All 10 questions must be different
 - Return ONLY the raw JSON array, nothing else`
       }]
     });
