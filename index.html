@@ -1334,7 +1334,7 @@ function handleAnswer(selectedIndex) {
   state.answered = true;
 
   const cat = CATEGORIES[state.catIndex];
-  const q   = cat.questions[state.qIndex];
+  const q   = (state.questions || cat.questions)[state.qIndex];
   const ok  = selectedIndex === q.c;
 
   // Disable all buttons and hint
