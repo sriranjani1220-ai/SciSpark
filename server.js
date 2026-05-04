@@ -35,17 +35,8 @@ function ageProfile(age) {
   };
 }
 
-const questionCache = {};
-
 app.post('/api/questions', async (req, res) => {
   const { name, subtitle, emoji, age } = req.body;
-  const cacheKey = `${name}-${age}`;
-
-  if (questionCache[cacheKey]) {
-    console.log(`Cache hit for ${cacheKey}`);
-    return res.json({ questions: questionCache[cacheKey] });
-  }
-
   const profile = ageProfile(age);
 
   try {
@@ -82,8 +73,7 @@ Rules:
 
     const raw = message.content[0].text.trim().replace(/^```[a-z]*\n?/i, '').replace(/```$/,'').trim();
     const questions = JSON.parse(raw);
-    console.log(`Questions generated in ${Date.now() - t0}ms — cached as ${cacheKey}`);
-    questionCache[cacheKey] = questions;
+    console.log(`Questions generated in ${Date.now() - t0}ms`);
     res.json({ questions });
   } catch (err) {
     console.error('Error generating questions:', err.message);
