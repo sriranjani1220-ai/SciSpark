@@ -731,7 +731,8 @@
         padding: 20px 12px 20px;
       }
 
-      /* Pull age widget out of absolute flow */
+      /* Pull age widget out of absolute flow and
+         move it below the pick-prompt using order */
       .age-widget {
         position: static;
         flex-direction: row;
@@ -740,7 +741,12 @@
         min-width: unset;
         width: auto;
         border-radius: 50px;
+        order: 4;
       }
+
+      .logo        { order: 1; }
+      .logo-sub    { order: 2; }
+      .pick-prompt { order: 3; }
 
       .age-widget-emoji {
         font-size: 1.4rem;
